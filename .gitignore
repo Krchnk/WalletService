@@ -1,0 +1,36 @@
+# Environment variables
+.env
+*.env
+config.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Binaries and build
+/bin/
+/build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Testing
+*.test
+*.tmp
+
+# Database
+*.db
+/wallet_data/
+
+# System files
+.DS_Store
+Thumbs.db 
