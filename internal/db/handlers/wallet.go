@@ -21,17 +21,34 @@ type WalletOperation struct {
 type App struct {
 	DB    *sql.DB
 	Cache *cache.WalletCache
+	done  chan struct{}
 }
 
 func NewApp(db *sql.DB, cache *cache.WalletCache) *App {
+
+	app := &App{
+		DB:    db,
+		Cache: cache,
+		done:  make(chan struct{}),
+	}
 
 	db.SetMaxOpenConns(500)
 	db.SetMaxIdleConns(100)
 	db.SetConnMaxLifetime(2 * time.Minute)
 
-	go func() {
-		for {
-			stats := db.Stats()
+	go app.monitorDBStats()
+
+	return app
+}
+
+func (a *App) monitorDBStats() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			stats := a.DB.Stats()
 			log.Printf(
 				"DB Stats: Open=%d, Idle=%d, InUse=%d, WaitCount=%d",
 				stats.OpenConnections,
@@ -39,14 +56,14 @@ func NewApp(db *sql.DB, cache *cache.WalletCache) *App {
 				stats.InUse,
 				stats.WaitCount,
 			)
-			time.Sleep(5 * time.Second)
+		case <-a.done:
+			return
 		}
-	}()
-
-	return &App{
-		DB:    db,
-		Cache: cache,
 	}
+}
+
+func (a *App) Shutdown() {
+	close(a.done)
 }
 
 func (a *App) ChangeWallet(w http.ResponseWriter, r *http.Request) {
